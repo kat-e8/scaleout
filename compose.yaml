@@ -1,0 +1,103 @@
+#This environment consists of a backend, frontend and edge gateways as well as a sql server connected to the backend.
+
+services:
+  frontend:
+    image: inductiveautomation/ignition:8.1.48
+    hostname: frontend
+    container_name: frontend
+    ports:
+      - 9070:8088
+    volumes:
+      - frontend-data:/usr/local/bin/ignition/data
+      # - ./gw-init/frontend.gwbk:/restore.gwbk
+      # - ./gw-init/frontend-uuid.txt:/usr/local/bin/ignition/data/.uuid
+      # - ./gw-init/frontend-metro-keystore:/usr/local/bin/ignition/data/local/metro-keystore
+      # - ./pylib/speciallibrary.py:/usr/local/bin/ignition/user-lib/pylib/speciallibrary.py
+    networks:
+      - frontend-network
+    secrets:
+      - gateway-password
+    environment:
+      - IGNITION_EDITION=standard
+      - GATEWAY_ADMIN_PASSWORD_FILE=/run/secrets/gateway-password
+      - ACCEPT_IGNITION_EULA=Y
+     # - GATEWAY_MODULES_ENABLED=alarm-notification,logix-driver,opc-ua,tag-historian
+    command: >
+      -n frontend-gateway
+      -m 1024
+#      -r /restore.gwbk
+  edge:
+    image: inductiveautomation/ignition:8.1.48
+    hostname: edge
+    container_name: edge
+    ports:
+      - 9072:8088
+    volumes:
+      - edge-data:/usr/local/bin/ignition/data
+     # - ./gw-init/edge.gwbk:/restore.gwbk
+     # - ./gw-init/edge-uuid.txt:/usr/local/bin/ignition/data/.uuid
+     # - ./gw-init/edge-metro-keystore:/usr/local/bin/ignition/data/local/metro-keystore
+      - ./pylib/speciallibrary.py:/usr/local/bin/ignition/user-lib/pylib/speciallibrary.py
+    networks:
+      - edge-network
+    secrets:
+      - gateway-password
+    environment:
+      - IGNITION_EDITION=edge
+      - GATEWAY_ADMIN_PASSWORD_FILE=/run/secrets/gateway-password
+      - ACCEPT_IGNITION_EULA=Y
+    command: >
+      -n edge-gateway
+      -m 1024
+     # -r /restore.gwbk
+  backend:
+    image: inductiveautomation/ignition:8.1.48
+    hostname: backend
+    container_name: backend
+    ports:
+      - 9071:8088
+    volumes:
+      - backend-data:/usr/local/bin/ignition/data
+      # - ./gw-init/backend.gwbk:/restore.gwbk
+      # - ./gw-init/backend-uuid.txt:/usr/local/bin/ignition/data/.uuid
+      # - ./gw-init/backend-metro-keystore:/usr/local/bin/ignition/data/local/metro-keystore
+    networks:
+      - frontend-network
+      - backend-network
+      - edge-network
+    environment:
+      - IGNITION_EDITION=standard
+      - GATEWAY_ADMIN_PASSWORD=gagoopane
+      - ACCEPT_IGNITION_EULA=Y
+    command: >
+      -n backend-gateway
+      -m 2048
+  #    -r /restore.gwbk
+  sqldb:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: sql_db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=yourStrong(!)Password
+      - MSSQL_PID=Developer
+    ports:
+      - 1433:1433
+    volumes:
+      - sql-data:/var/opt/mssql
+    #restart: always
+    networks:
+      backend-network:
+        aliases:
+          - main-db
+secrets:
+  gateway-password:
+    file: ./secrets/GATEWAY_PASSWORD
+networks:
+  frontend-network:
+  backend-network:
+  edge-network:
+volumes:
+  frontend-data:
+  edge-data:
+  backend-data:
+  sql-data:

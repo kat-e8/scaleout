@@ -48,7 +48,7 @@ services:
       - ACCEPT_IGNITION_EULA=Y
     command: >
       -n edge-gateway
-      -m 1024
+      -m 512
      # -r /restore.gwbk
   backend:
     image: inductiveautomation/ignition:8.1.48
@@ -71,11 +71,11 @@ services:
       - ACCEPT_IGNITION_EULA=Y
     command: >
       -n backend-gateway
-      -m 2048
+      -m 1024
   #    -r /restore.gwbk
   sqldb:
     image: mcr.microsoft.com/mssql/server:2019-latest
-    container_name: sql_db
+    container_name: sqldb
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=yourStrong(!)Password
